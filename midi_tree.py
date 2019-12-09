@@ -41,8 +41,8 @@ class MidiObject(object):
         self.list = []
         self.fader_value = 127
         self.notes = np.zeros((60, 3), dtype=np.uint8)
-        self.ledcontroller = LEDController(60, port="/dev/led_tree")
-        self.ledcontroller.all_off()
+        #self.ledcontroller = LEDController(60, port="/dev/led_tree")
+        #self.ledcontroller.all_off()
         self.mode = "COLOR"
 
     def set_note_by_color(self, color, brightness=128):
@@ -95,8 +95,12 @@ class MidiPlayer(MidiObject):
     def play(self, filename):
         mid = mido.MidiFile(filename)
         for msg in mid.play():
-
-            print(msg)
+            if msg.type == "note_on":
+                #print(msg.note)
+                self.set_note_by_color(self.colors[msg.note])
+                #print(msg.note, msg.channel, msg.velocity)
+            if msg.type == "note_off":
+                self.set_note_by_color([0,0,0])
 
 mode = "midi_player"
 if mode == "midi_controller":
