@@ -41,8 +41,8 @@ class MidiObject(object):
         self.list = []
         self.fader_value = 127
         self.notes = np.zeros((60, 3), dtype=np.uint8)
-        #self.ledcontroller = LEDController(60, port="/dev/led_tree")
-        #self.ledcontroller.all_off()
+        self.ledcontroller = LEDController(60, port="/dev/led_tree")
+        self.ledcontroller.all_off()
         self.mode = "COLOR"
 
     def set_note_by_color(self, color, brightness=128):
@@ -73,7 +73,6 @@ class MidiHandler(MidiObject):
             print("note pressed")
             self.set_note_by_color(self.colors[note])
             #  print(event, self.colors[note], velocity, deltatime)
-
             self.list.append({"time": deltatime, "event": event})
                 #self.set_color_by_note()
 
