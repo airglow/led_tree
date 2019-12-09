@@ -10,6 +10,7 @@ import math
 import numpy as np
 import time
 from matplotlib import pyplot as plt
+import mido
 import rtmidi
 from rtmidi import midiutil
 from ledcontroller import LEDController
@@ -31,8 +32,8 @@ def generate_color_map(N):
     return ret
 
 
-class MidiHandler(object):
-    """Docstring for MidiHandler """
+class MidiObject(object):
+    """Docstring for MidiObject """
 
     def __init__(self):
         """@todo: to be defined """
@@ -43,6 +44,19 @@ class MidiHandler(object):
         self.ledcontroller = LEDController(60, port="/dev/led_tree")
         self.ledcontroller.all_off()
         self.mode = "COLOR"
+
+    def set_note_by_color(self, color, brightness=128):
+        self.notes[:, 0] = min(np.uint8(color[0] * brightness * 2), 254)
+        self.notes[:, 1] = min(np.uint8(color[1] * brightness * 2), 254)
+        self.notes[:, 2] = min(np.uint8(color[2] * brightness * 2), 254)
+        self.ledcontroller.set_config(self.notes)
+
+
+class MidiHandler(MidiObject):
+    """Docstring for MidiHandler """
+
+    def __init__(self):
+        super().__init__()
 
 #    def set_color_by_note(self, note):
 
@@ -57,38 +71,52 @@ class MidiHandler(object):
             self.fader_value = velocity
         if command == 144:
             print("note pressed")
+            self.set_note_by_color(self.colors[note])
             #  print(event, self.colors[note], velocity, deltatime)
+
             self.list.append({"time": deltatime, "event": event})
-            self.notes[:, 0] = min(np.uint8(self.colors[note][0] * self.fader_value * 2), 254)
-            self.notes[:, 1] = min(np.uint8(self.colors[note][1] * self.fader_value * 2), 254)
-            self.notes[:, 2] = min(np.uint8(self.colors[note][2] * self.fader_value * 2), 254)
                 #self.set_color_by_note()
 
             print(self.notes[note])
         if command == 128:
             print("note off")
-            self.notes[:, 0] = 0
-            self.notes[:, 1] = 0
-            self.notes[:, 2] = 0
+            self.set_note_by_color([0,0,0])
+            #self.ledcontroller.set_config(self.notes)
 
-        if command == 128 or command == 144:
-            self.ledcontroller.set_config(self.notes)
+        #if command == 128 or command == 144:
+        #    self.ledcontroller.set_config(self.notes)
 
 
-midi_in = rtmidi.MidiIn()
-midiutil.list_input_ports()
+class MidiPlayer(MidiObject):
 
-midiin, port = midiutil.open_midiinput()
+    def __init__(self):
+        super().__init__()
 
-midihandler = MidiHandler()
-midiin.set_callback(midihandler)
+    def play(self, filename):
+        mid = mido.MidiFile(filename)
+        for msg in mid.play():
 
-try:
-    while True:
-        time.sleep(1.0)
+            print(msg)
 
-except KeyboardInterrupt:
-    print()
-finally:
-    midiin.close_port()
-    print(midihandler.list)
+mode = "midi_player"
+if mode == "midi_controller":
+    midi_in = rtmidi.MidiIn()
+    midiutil.list_input_ports()
+    
+    midiin, port = midiutil.open_midiinput()
+    
+    midihandler = MidiHandler()
+    midiin.set_callback(midihandler)
+    
+    try:
+        while True:
+            time.sleep(1.0)
+    
+    except KeyboardInterrupt:
+        print()
+    finally:
+        midiin.close_port()
+        print(midihandler.list)
+else:
+   midi_player = MidiPlayer()
+   midi_player.play("jingle_bells.mid")
