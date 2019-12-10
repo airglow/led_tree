@@ -1,7 +1,7 @@
 
 """
 Requirements:
-    pip install python-rtmidi serial numpy
+    pip install python-rtmidi serial numpy mido pyfluidsynth
 Run like:
     python midi_tree.py
 """
@@ -15,14 +15,13 @@ import mido
 import rtmidi
 from rtmidi import midiutil
 from ledcontroller import LEDController
-import random
 import fluidsynth
 
 
 def generate_color_map(N):
     arr = np.arange(N)/N
     N_up = int(math.ceil(N/7)*7)
-    arr.resize(N_up) 
+    arr.resize(N_up)
     arr = arr.reshape(7, N_up//7).T.reshape(-1)
     ret = plt.cm.hsv(arr)
     n = ret[:, 3].size
@@ -108,7 +107,7 @@ class MidiPlayer(MidiObject):
                 print(msg.note, msg.channel, msg.velocity)
             if msg.type == "note_off":
                 if msg.channel == 0:
-                    self.set_note_by_color([0,0,0])
+                    self.set_note_by_color([0, 0, 0])
                     self.synth.noteoff(0, msg.note)
 
 
