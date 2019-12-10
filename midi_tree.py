@@ -6,6 +6,7 @@ Run like:
     python midi_tree.py
 """
 
+import sys
 import math
 import numpy as np
 import time
@@ -14,12 +15,14 @@ import mido
 import rtmidi
 from rtmidi import midiutil
 from ledcontroller import LEDController
+import random
+import fluidsynth
 
 
 def generate_color_map(N):
     arr = np.arange(N)/N
     N_up = int(math.ceil(N/7)*7)
-    arr.resize(N_up)
+    arr.resize(N_up) 
     arr = arr.reshape(7, N_up//7).T.reshape(-1)
     ret = plt.cm.hsv(arr)
     n = ret[:, 3].size
@@ -56,8 +59,7 @@ class MidiHandler(MidiObject):
     """Docstring for MidiHandler """
 
     def __init__(self):
-        super().__init__()
-
+        super().__init__() 
 #    def set_color_by_note(self, note):
 
     def __call__(self, event, data=None):
@@ -90,36 +92,47 @@ class MidiPlayer(MidiObject):
 
     def __init__(self):
         super().__init__()
+        self.synth = fluidsynth.Synth()
+        self.synth.start(driver="alsa")
+        sfid = self.synth.sfload("example.sf2")
+        self.synth.program_select(0, sfid, 0, 0)
 
     def play(self, filename):
         mid = mido.MidiFile(filename)
         for msg in mid.play():
             if msg.type == "note_on":
                 #print(msg.note)
-                self.set_note_by_color(self.colors[msg.note])
-                #print(msg.note, msg.channel, msg.velocity)
+                if msg.channel == 0:
+                    self.set_note_by_color(self.colors[msg.note])
+                    self.synth.noteon(0, msg.note, msg.velocity)
+                print(msg.note, msg.channel, msg.velocity)
             if msg.type == "note_off":
-                self.set_note_by_color([0,0,0])
+                if msg.channel == 0:
+                    self.set_note_by_color([0,0,0])
+                    self.synth.noteoff(0, msg.note)
+
 
 mode = "midi_player"
+#mode = "midi_controller"
 if mode == "midi_controller":
     midi_in = rtmidi.MidiIn()
     midiutil.list_input_ports()
-    
+
     midiin, port = midiutil.open_midiinput()
-    
+
     midihandler = MidiHandler()
     midiin.set_callback(midihandler)
-    
+
     try:
         while True:
             time.sleep(1.0)
-    
     except KeyboardInterrupt:
         print()
     finally:
         midiin.close_port()
         print(midihandler.list)
 else:
-   midi_player = MidiPlayer()
-   midi_player.play("jingle_bells.mid")
+    midi_player = MidiPlayer()
+    midi_filename = sys.argv[1]
+    print(midi_filename)
+    midi_player.play(midi_filename)
