@@ -42,15 +42,20 @@ class MidiObject(object):
         self.colors = generate_color_map(128)
         self.list = []
         self.fader_value = 127
-        self.notes = np.zeros((60, 3), dtype=np.uint8)
-        self.ledcontroller = LEDController(60, port="/dev/led_tree")
+        self.notes = np.zeros((29, 3), dtype=np.uint8)
+        self.ledcontroller = LEDController(29, port="/dev/led_tree")
         self.ledcontroller.all_off()
         self.mode = "COLOR"
 
     def set_note_by_color(self, color, brightness=128):
-        self.notes[:, 0] = min(np.uint8(color[0] * brightness * 2), 254)
-        self.notes[:, 1] = min(np.uint8(color[1] * brightness * 2), 254)
-        self.notes[:, 2] = min(np.uint8(color[2] * brightness * 2), 254)
+        #self.notes[:, 0] = min(np.uint8(color[0] * brightness * 2), 254)
+        #self.notes[:, 1] = min(np.uint8(color[1] * brightness * 2), 254)
+        #self.notes[:, 2] = min(np.uint8(color[2] * brightness * 2), 254)
+
+        self.notes[:, 0] = min(np.uint8(128), 254)
+        self.notes[:, 1] = min(np.uint8(0), 254)
+        self.notes[:, 2] = min(np.uint8(0), 254)
+        print(self.notes)
         self.ledcontroller.set_config(self.notes)
 
 
@@ -102,9 +107,10 @@ class MidiPlayer(MidiObject):
             if msg.type == "note_on":
                 #print(msg.note)
                 if msg.channel == 0:
+                    #self.set_note_by_color(self.colors[msg.note])
                     self.set_note_by_color(self.colors[msg.note])
                     self.synth.noteon(0, msg.note, msg.velocity)
-                print(msg.note, msg.channel, msg.velocity)
+                    print(msg.note, msg.channel, msg.velocity)
             if msg.type == "note_off":
                 if msg.channel == 0:
                     self.set_note_by_color([0, 0, 0])
@@ -131,6 +137,14 @@ if mode == "midi_controller":
         midiin.close_port()
         print(midihandler.list)
 else:
+
+    #ledcontroller = LEDController(60, port="/dev/led_tree")
+    #for i in range(100):
+    #    ledcontroller.all_off()
+    #    time.sleep(2.0)
+    #    ledcontroller.all_on()
+    #    time.sleep(2.0)
+
     midi_player = MidiPlayer()
     midi_filename = sys.argv[1]
     print(midi_filename)
