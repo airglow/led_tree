@@ -10,28 +10,13 @@ import sys
 import math
 import numpy as np
 import time
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 import mido
 import rtmidi
 from rtmidi import midiutil
 from ledcontroller import LEDController
 import fluidsynth
-
-
-def generate_color_map(N):
-    arr = np.arange(N)/N
-    N_up = int(math.ceil(N/7)*7)
-    arr.resize(N_up)
-    arr = arr.reshape(7, N_up//7).T.reshape(-1)
-    ret = plt.cm.hsv(arr)
-    n = ret[:, 3].size
-    a = n//2
-    b = n-a
-    for i in range(3):
-        ret[0:n//2, i] *= np.arange(0.2, 1, 0.8/a)
-    ret[n//2:, 3] *= np.arange(1, 0.1, -0.9/b)
-#     print(ret)
-    return ret
+import colors
 
 
 class MidiObject(object):
@@ -39,22 +24,19 @@ class MidiObject(object):
 
     def __init__(self):
         """@todo: to be defined """
-        self.colors = generate_color_map(128)
+        self.colors = colors.discriminative_colors
         self.list = []
         self.fader_value = 127
-        self.notes = np.zeros((29, 3), dtype=np.uint8)
-        self.ledcontroller = LEDController(29, port="/dev/led_tree")
+        self.notes = np.zeros((30, 3), dtype=np.uint8)
+        self.ledcontroller = LEDController(30, port="/dev/led_tree")
         self.ledcontroller.all_off()
         self.mode = "COLOR"
 
     def set_note_by_color(self, color, brightness=128):
-        #self.notes[:, 0] = min(np.uint8(color[0] * brightness * 2), 254)
-        #self.notes[:, 1] = min(np.uint8(color[1] * brightness * 2), 254)
-        #self.notes[:, 2] = min(np.uint8(color[2] * brightness * 2), 254)
+        self.notes[:, 0] = min(np.uint8(color[0] * brightness * 2), 254)
+        self.notes[:, 1] = min(np.uint8(color[1] * brightness * 2), 254)
+        self.notes[:, 2] = min(np.uint8(color[2] * brightness * 2), 254)
 
-        self.notes[:, 0] = min(np.uint8(128), 254)
-        self.notes[:, 1] = min(np.uint8(0), 254)
-        self.notes[:, 2] = min(np.uint8(0), 254)
         print(self.notes)
         self.ledcontroller.set_config(self.notes)
 
@@ -144,7 +126,6 @@ else:
     #    time.sleep(2.0)
     #    ledcontroller.all_on()
     #    time.sleep(2.0)
-
     midi_player = MidiPlayer()
     midi_filename = sys.argv[1]
     print(midi_filename)
